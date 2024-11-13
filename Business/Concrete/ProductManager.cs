@@ -1,7 +1,10 @@
 ﻿using Business.Abstract;
+using Business.BusinessAspect.Autofac;
 using Business.CCS;
 using Business.Constants;
 using Business.ValidationRules.FluentValidation;
+using Core.Aspects.Autofac.Caching;
+using Core.Aspects.Autofac.Transaction;
 using Core.Aspects.Autofac.Validation;
 using Core.CrossCuttingConcerns.Validation;
 using Core.Utilities.Business;
@@ -16,6 +19,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace Business.Concrete
 {
@@ -30,7 +34,7 @@ namespace Business.Concrete
             _categoryService = categoryService;
         }
 
-
+        [SecuredOperation("product.add,admin")]
         [ValidationAspect(typeof(ProductValidator))]  //Add metotunu doğrula ProductValidator kullanarak. 
         public IResult Add(Product product)
         {
@@ -53,7 +57,7 @@ namespace Business.Concrete
             //Bunu mesaj göndermeden de çalıştırabiliriz Bunu overloading işlemi ile SuccessResultın base'in de yaptık.
         }
 
-
+        [CacheAspect] //key,value ile tutuyoruz. key dediğimiz cache verilmiş isimdir.
         public IDataResult<List<Product>> GetAll()
         {
             
@@ -68,7 +72,7 @@ namespace Business.Concrete
         {
             return new SuccessDataResult<List<Product>>(_productDal.GetAll(p => p.CategoryId == id), Messages.GetAllByCategoryId); //Her p için p'nin CategoryId si benim gönderdiğim id'ye eşitse onları filtrele
         }
-
+        [CacheAspect]
         public IDataResult<Product> GetById(int productId)
         {
             return new SuccessDataResult<Product>(_productDal.Get(p => p.ProductId == productId)); //Mesaj vermek istersen yazabiliriz.
@@ -88,7 +92,8 @@ namespace Business.Concrete
             return new SuccessDataResult<List<ProductDetailDto>>(_productDal.GetProductDetails());
         }
 
-        [ValidationAspect(typeof(ProductValidator))]
+        //[ValidationAspect(typeof(ProductValidator))]
+        [CacheRemoveAspect("IProductService.Get")] //eğer biz buraya sadece get yazarsak get işlemi yapan bğütün cacheleri silmiş oluruz. Bu şekilde IProductService de ki bütün getleri siler.
         public IResult Update(Product product)
         {
             var productIdSayisi = _productDal.GetAll(p => p.ProductId == product.ProductId).Count;
@@ -96,7 +101,8 @@ namespace Business.Concrete
             {
                 return new ErrorResult(Messages.ProductCountOfCategoryError);
             }
-            throw new NotImplementedException();
+            _productDal.Update(product);
+            return new SuccessResult(Messages.ProductUpdated);
         }
         private IResult CheckIfProductCountOfCategoryCorrect(int categoryId) //bu categorye 15den fazla ürün eklenemez.
         {
@@ -126,6 +132,15 @@ namespace Business.Concrete
                 }
 
             return new SuccessResult();
+        }
+
+        [TransactionScopeAspect]
+        public IResult TransactionalOperation(Product product)
+        {
+            _productDal.Update(product);
+            _productDal.Add(product);
+            return new SuccessResult(Messages.ProductUpdated);
+
         }
     }
 }

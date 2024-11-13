@@ -1,8 +1,7 @@
 ﻿using Business.Abstract;
 using Entities.Concrete;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using System.Threading;
 
 namespace WebAPI.Controllers
 {
@@ -23,8 +22,14 @@ namespace WebAPI.Controllers
 
 
         [HttpGet("getall")]
+        [ProducesResponseType(200,Type=typeof(Product))] //Bu şekilde durum kodlarınında swegarda gözükmesini sağlarız. Fakat 200 kodunun olduğu yerde tip belirtmezsek sadece succes durumu gözükür.
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+       // [ProducesResponseType(StatusCodes.Status201Created)]
+
         public IActionResult GetAll()
         {
+            Thread.Sleep(1000);
             var result = _productService.GetAll();
             if (result.Success)
             {
@@ -34,7 +39,14 @@ namespace WebAPI.Controllers
             return BadRequest(result);    //bu şekilde hem datayı hem mesajı hemde succes durumunu verir.
             //return BadRequest(result.Message); // sadece mesajı bermiş oluruz.
         }
-
+        [HttpGet("GetProductDetails")]
+        public IActionResult GetProductDetails()
+        {
+            var result = _productService.GetProductDetails();
+            if (result.Success)
+                return Ok(result);
+            return BadRequest(result);
+        }
         [HttpGet("getbyid")]
         public IActionResult GetById(int id)
         {
@@ -63,6 +75,34 @@ namespace WebAPI.Controllers
             {
                 return Ok(result);
             }
+            return BadRequest(result);
+        }
+        [HttpPost("Update")]
+        public IActionResult Update(Product product) 
+        {
+            var result = _productService.Update(product);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
+        [HttpGet("getbycategory")]
+        public IActionResult GetByCategory(int categoryId)
+        {
+            var result = _productService.GetAllByCategoryId(categoryId);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
+        [HttpPost("TransactionTest")]
+        public IActionResult TransactionTest(Product product) 
+        {
+            var result = _productService.TransactionalOperation(product);
+            if (result.Success)
+                return Ok(result);
             return BadRequest(result);
         }
     }

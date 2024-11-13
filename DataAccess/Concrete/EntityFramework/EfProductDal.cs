@@ -13,11 +13,11 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Concrete.EntityFramework
 {
-    public class EfProductDal : EfEntityRepositoryBase<Product, NortwindContext>, IProductDal
+    public class EfProductDal : EfEntityRepositoryBase<Product, NorthwindContext>, IProductDal
     {
         public List<ProductDetailDto> GetProductDetails()
         {
-            using (NortwindContext context=new NortwindContext())
+            using (NorthwindContext context=new NorthwindContext())
             {
                 //ürünlere p de categorylere c de ürünlerle categoryleri join et.
                 //Neye göre join et p'deki categoryId ile c'deki categoryId eşit ise 
